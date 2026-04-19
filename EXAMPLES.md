@@ -1,6 +1,6 @@
 # Examples
 
-Real-world code examples demonstrating the four principles. Each example shows what LLMs commonly do wrong and how to fix it.
+Real-world code examples demonstrating the five principles. Each example shows what LLMs commonly do wrong and how to fix it.
 
 ---
 
@@ -495,6 +495,149 @@ def sort_scores(scores):
 
 ---
 
+## 5. Machine-Verified Completeness
+
+### Example 1: Claiming Done Without Running Checks
+
+**User Request:** "Fix the TypeError in the cart total calculation"
+
+**❌ What LLMs Do ("Looks Right" = Done)**
+
+```
+I've fixed the TypeError. The issue was that `item.price` could be a string
+in some cases, so I added a `Number()` conversion. The fix should resolve
+the crash.
+
+Let me know if you run into any other issues!
+```
+
+```diff
+  function calculateTotal(items) {
+-     return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
++     return items.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
+  }
+```
+
+**Problems:**
+- Never ran the linter
+- Never ran the type-checker
+- Never ran the existing test suite
+- "Should resolve" is a guess, not verification
+- No evidence the reported scenario actually works now
+
+**✅ What Should Happen (Evidence Before Assertions)**
+
+```
+Fix applied. Verification:
+
+✓ Ran `npm run lint` — 0 errors, 0 warnings
+✓ Ran `npm run typecheck` — passes
+✓ Ran `npm test cart` — 14/14 passing, including new regression test
+  `calculateTotal handles string prices` which failed before the fix
+
+Not verified by automation:
+- Live checkout flow in browser (no E2E test exists for this path)
+
+If you want me to spin up the dev server and click through checkout
+manually, say the word.
+```
+
+### Example 2: Declaring Gaps Explicitly
+
+**User Request:** "Add a dark mode toggle to the settings page"
+
+**❌ What LLMs Do (Hiding the Gap)**
+
+```
+Done! I've added a dark mode toggle to the settings page. It persists
+to localStorage and applies the theme class to the <html> element.
+The code compiles without errors.
+```
+
+**Problems:**
+- "Compiles" ≠ "works"
+- Never opened a browser
+- Never clicked the toggle
+- Never verified the theme actually changed visually
+- User will find out it's broken when they try to use it
+
+**✅ What Should Happen (Declare What Was and Wasn't Verified)**
+
+```
+Implementation complete. Here's what was verified vs. what wasn't:
+
+Verified by automation:
+✓ `tsc --noEmit` passes
+✓ `eslint src/settings` passes
+✓ Unit test: toggle click dispatches correct action
+✓ Unit test: localStorage write happens on toggle
+
+NOT verified (requires runtime/browser):
+✗ Theme class actually applies to <html> at runtime
+✗ CSS variables cascade correctly across all components
+✗ Toggle state persists across page reload
+✗ Visual appearance in dark mode (some components may not be themed)
+
+Recommended next step: run `npm run dev`, open the settings page,
+click the toggle, and confirm the UI actually inverts. If you want
+me to do that and report back, I can.
+```
+
+### Example 3: Success Criteria Before Starting
+
+**User Request:** "Migrate the user service from REST to gRPC"
+
+**❌ What LLMs Do (Vague "Done" Target)**
+
+```
+I'll migrate the user service to gRPC. Here's my plan:
+1. Define proto files
+2. Generate stubs
+3. Replace REST handlers with gRPC handlers
+4. Update the client
+
+Let me start with step 1...
+```
+
+**Problems:**
+- What does "done" look like? Unclear.
+- How will we know it's correct? Unspecified.
+- Which verification gates must pass? Not stated.
+- At the end, "done" will mean "I finished typing"
+
+**✅ What Should Happen (Declare Passing = X)**
+
+```
+Before starting, here's my success criteria — "done" means all of these:
+
+Automated gates:
+1. `buf lint` passes on all proto files
+2. `go vet ./...` and `go test ./...` pass
+3. Existing integration test suite passes (currently 47 tests)
+4. New gRPC contract tests pass for every previously-REST endpoint
+5. `grpcurl` smoke test against local server returns expected response
+   for GetUser, CreateUser, DeleteUser
+
+Manual/runtime gates (I will flag these, not claim them):
+- Dashboard still loads user list (browser check)
+- Authenticated flows still work end-to-end
+
+I won't say "done" until items 1-5 show green output in my terminal
+and I've explicitly called out the state of the manual gates.
+
+Plan:
+1. Proto files → verify: buf lint passes
+2. Server stubs → verify: go build + unit tests pass
+3. One endpoint (GetUser) → verify: grpcurl smoke + contract test green
+4. Remaining endpoints → verify: all contract tests green
+5. Client migration → verify: integration suite green
+6. Final → run full gate list, report exact output
+
+Proceed?
+```
+
+---
+
 ## Anti-Patterns Summary
 
 | Principle | Anti-Pattern | Fix |
@@ -503,6 +646,7 @@ def sort_scores(scores):
 | Simplicity First | Strategy pattern for single discount calculation | One function until complexity is actually needed |
 | Surgical Changes | Reformats quotes, adds type hints while fixing bug | Only change lines that fix the reported issue |
 | Goal-Driven | "I'll review and improve the code" | "Write test for bug X → make it pass → verify no regressions" |
+| Machine-Verified Completeness | "Should work" / "compiles cleanly" = done | Paste actual lint/test output; explicitly list what wasn't verified |
 
 ## Key Insight
 
