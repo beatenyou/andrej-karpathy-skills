@@ -2,7 +2,7 @@
 
 > Check out my new project [Multica](https://github.com/multica-ai/multica) — an open-source platform for running and managing coding agents with reusable skills.
 >
-> Follow me on X: [https://x.com/jiayuan_jy](https://x.com/jiayuan_jy)
+> This repo is a fork with some slight modifications.
 
 A single `CLAUDE.md` file to improve Claude Code behavior, derived from [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls.
 
@@ -19,7 +19,7 @@ From Andrej's post:
 
 ## The Solution
 
-Four principles in one file that directly address these issues:
+Five principles in one file that directly address these issues:
 
 | Principle | Addresses |
 |-----------|-----------|
@@ -27,8 +27,9 @@ Four principles in one file that directly address these issues:
 | **Simplicity First** | Overcomplication, bloated abstractions |
 | **Surgical Changes** | Orthogonal edits, touching code you shouldn't |
 | **Goal-Driven Execution** | Leverage through tests-first, verifiable success criteria |
+| **Machine-Verified Completeness** | "Looks right" claims, hidden gaps, unverified "done" |
 
-## The Four Principles in Detail
+## The Five Principles in Detail
 
 ### 1. Think Before Coding
 
@@ -95,38 +96,33 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let the LLM loop independently. Weak criteria ("make it work") require constant clarification.
 
+### 5. Machine-Verified Completeness
+
+**"Looks right" is not done. Passing gates are done.**
+
+LLMs often declare victory based on how the code reads, not whether it runs. This principle forces evidence before assertions:
+
+- **Run lint and type-check** — Both must pass before claiming "fixed"
+- **Declare success criteria upfront** — Not just a plan, but what passing actually looks like
+- **Separate automation gates from runtime gates** — Explicitly flag what was verified by CI vs. what needs a browser or a running process
+- **Paste real output, not summaries** — "Tests pass" should come with the test runner's actual green output
+
+**The test:** "Build passes" ≠ "done". Only verified execution of the user's actual scenario is done.
+
 ## Install
 
-**Option A: Claude Code Plugin (recommended)**
-
-From within Claude Code, first add the marketplace:
-```
-/plugin marketplace add forrestchang/andrej-karpathy-skills
-```
-
-Then install the plugin:
-```
-/plugin install andrej-karpathy-skills@karpathy-skills
-```
-
-This installs the guidelines as a Claude Code plugin, making the skill available across all your projects.
-
-**Option B: CLAUDE.md (per-project)**
+**CLAUDE.md (per-project)**
 
 New project:
 ```bash
-curl -o CLAUDE.md https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md
+curl -o CLAUDE.md https://raw.githubusercontent.com/beatenyou/andrej-karpathy-skills/main/CLAUDE.md
 ```
 
 Existing project (append):
 ```bash
 echo "" >> CLAUDE.md
-curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md
+curl https://raw.githubusercontent.com/beatenyou/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md
 ```
-
-## Using with Cursor
-
-This repository includes a committed Cursor project rule ([`.cursor/rules/karpathy-guidelines.mdc`](.cursor/rules/karpathy-guidelines.mdc)) so the same guidelines apply when you open the project in Cursor. See **[CURSOR.md](CURSOR.md)** for setup, using the rule in other projects, and how this relates to Claude Code.
 
 ## Key Insight
 
